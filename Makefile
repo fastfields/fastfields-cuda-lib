@@ -16,9 +16,10 @@ MOVE        ?= mv -f
 MKDIR     	?= mkdir -p
 BUILDDIR  	?= ./build
 # nvcc flags: -std/-O3 pass straight through. The clang-only diagnostic flags
-# (-ferror-limit / -ftemplate-backtrace-limit) are NOT understood by nvcc, and
-# nvcc 12 builds these CUDA headers under -std=c++14.
-CXXFLAGS  	+= -std=c++14 -O3
+# (-ferror-limit / -ftemplate-backtrace-limit) are NOT understood by nvcc.
+# C++17 throughout (nvcc 12 supports it); the shared kernels (gather.h, the
+# teeny-based pushpull) use if constexpr / inline constexpr members.
+CXXFLAGS  	+= -std=c++17 -O3
 INCLUDES  	+=
 TESTFLAGS 	+= -ferror-limit=1 -ftemplate-backtrace-limit=0
 UNAME     	?= uname
