@@ -17,10 +17,15 @@ jobs:
     # Compile + link gate only — there is no GPU in CI, so runtime correctness
     # is validated on real hardware, not here. `nvidia-cuda-toolkit` from apt
     # installs CUDA ~12.x (nvcc), which drives the build. Only the modules in
-    # the Makefile MODULES list are compiled — currently just `distance`; more
-    # modules join MODULES as their fastfields-cuda-impl host launchers land.
+    # the Makefile MODULES list are compiled (distance, reg_field, reg_flow;
+    # pushpull is excluded there, its nvcc compile is ~40 min on its own).
+    # MODULES' combined compile time has grown well past this job's original
+    # 60-minute budget as more regulariser dispatch functions landed, even
+    # though each addition is individually small (the nvcc frontend re-pays
+    # the BOUND x dtype x offset_t template-instantiation cost per module) --
+    # bumped to 120 minutes for headroom.
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v5
         with:
