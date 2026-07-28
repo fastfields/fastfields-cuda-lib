@@ -3,6 +3,7 @@
 #include <vector>
 #include <cstdint>
 #include "reg_field.h"
+#include "posdef.h"
 #include "autocast.h"
 #include "dlpack.h"
 #include "impl/kernels/cuda_switch.h"
@@ -914,6 +915,94 @@ void field_relax(
                 nb_iter, s.shape, s.strides, h.strides, g.strides, cstream
     NDIM_SWITCH(RX_DT)
 #undef RX_ARGS
+}
+
+// `field_diag`'s regulariser diagonal doesn't depend on the operand being
+// solved for, so `field_precond[_]` materialise it into a fresh contiguous
+// device scratch buffer shaped like `grd`/`sol` and hand it to
+// posdef::sym_solve[_] as the per-channel weight map. Caller owns the
+// returned device pointer and must freeDevice() it.
+static inline uint8_t * field_precond_diag(
+    const DLTensor & like      ,
+    const double    * voxel_size,
+    const double    * absolute  ,
+    const double    * membrane  ,
+    const double    * bending   ,
+          int8_t      bound     ,
+          int         ndim      ,
+          int         stream    ,
+          DLTensor  & diag_t    )
+{
+    size_t numel = 1;
+    for (int32_t d = 0; d < like.ndim; ++d)
+        numel *= static_cast<size_t>(like.shape[d]);
+    uint8_t * diag_buf = allocDevice<uint8_t>(numel * static_cast<size_t>(like.dtype.bits) / 8);
+
+    diag_t.data        = diag_buf;
+    diag_t.device       = like.device;
+    diag_t.ndim         = like.ndim;
+    diag_t.dtype        = like.dtype;
+    diag_t.shape        = like.shape;
+    diag_t.strides      = nullptr;
+    diag_t.byte_offset  = 0;
+
+    field_diag(diag_t, voxel_size, absolute, membrane, bending, bound, ndim, stream);
+    return diag_buf;
+}
+
+void field_precond(
+          DLTensor & out       ,
+    const DLTensor & hes       ,
+    const DLTensor & grd       ,
+    const double   * voxel_size,
+    const double   * absolute  ,
+    const double   * membrane  ,
+    const double   * bending   ,
+          int8_t     bound     ,
+          int        ndim      ,
+          int        stream    )
+{
+    CHECK_NO_LANES(grd)
+    if (grd.ndim - ndim - 1 < 0)
+        throw std::invalid_argument("ndim is larger than the tensor rank");
+
+    DLTensor diag_t;
+    uint8_t * diag_buf = field_precond_diag(
+        grd, voxel_size, absolute, membrane, bending, bound, ndim, stream, diag_t);
+    try {
+        sym_solve(out, hes, grd, diag_t, stream);
+    } catch (...) {
+        freeDevice(diag_buf);
+        throw;
+    }
+    freeDevice(diag_buf);
+}
+
+void field_precond_(
+          DLTensor & sol       ,
+    const DLTensor & hes       ,
+    const double   * voxel_size,
+    const double   * absolute  ,
+    const double   * membrane  ,
+    const double   * bending   ,
+          int8_t     bound     ,
+          int        ndim      ,
+          int        stream    )
+{
+    CHECK_NO_LANES(sol)
+    if (sol.ndim - ndim - 1 < 0)
+        throw std::invalid_argument("ndim is larger than the tensor rank");
+
+    DLTensor diag_t;
+    uint8_t * diag_buf = field_precond_diag(
+        sol, voxel_size, absolute, membrane, bending, bound, ndim, stream, diag_t);
+    try {
+        sym_solve_(sol, hes, diag_t, stream);
+    } catch (...) {
+        freeDevice(diag_buf);
+        throw;
+    }
+    freeDevice(diag_buf);
 }
 
 // Determine whether `wgt`'s trailing (channel) dimension selects the RLS
