@@ -19,11 +19,14 @@ jobs:
     # installs CUDA ~12.x (nvcc), which drives the build. Only the modules in
     # the Makefile MODULES list are compiled (distance, reg_field, reg_flow;
     # pushpull is excluded there, its nvcc compile is ~40 min on its own).
-    # MODULES' combined compile time has grown well past this job's original
-    # 60-minute budget as more regulariser dispatch functions landed, even
+    # MODULES' combined compile time/memory has grown well past this job's
+    # original budget as more regulariser dispatch functions landed, even
     # though each addition is individually small (the nvcc frontend re-pays
     # the BOUND x dtype x offset_t template-instantiation cost per module) --
-    # bumped to 120 minutes for headroom.
+    # reg_field.cpp alone now gets OOM-killed under -O3 on a standard runner.
+    # Since this is a compile+link gate, not a perf build, CXXFLAGS overrides
+    # the Makefile's default -O3 down to -O1 below to cut nvcc's peak memory
+    # and wall time; 120-minute timeout kept for headroom regardless.
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
@@ -34,4 +37,4 @@ jobs:
       - name: Install CUDA toolkit and clang
         run: sudo apt-get update && sudo apt-get install -y nvidia-cuda-toolkit clang
       - name: Compile and link libfastfields-cuda.so
-        run: make -C . CXX=clang++
+        run: make -C . CXX=clang++ CXXFLAGS="-std=c++14 -O1"
