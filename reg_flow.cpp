@@ -553,7 +553,7 @@ void flow_matvec(
  * @brief `flow_matvec` variant that accumulates into `out`: `out += L(inp)`,
  *        instead of overwriting it. Same conventions otherwise.
  */
-void flow_matvec_add_(
+void flow_addmatvec_(
           DLTensor & out_      ,
     const DLTensor & inp_      ,
     const double   * voxel_size,
@@ -599,7 +599,7 @@ void flow_matvec_add_(
  * @brief `flow_matvec` variant that subtracts from `out`: `out -= L(inp)`,
  *        instead of overwriting it. Same conventions otherwise.
  */
-void flow_matvec_sub_(
+void flow_submatvec_(
           DLTensor & out_      ,
     const DLTensor & inp_      ,
     const double   * voxel_size,
@@ -682,7 +682,7 @@ void flow_diag(
  * @brief `flow_diag` variant that accumulates: `out += diag(L)`. In-place only,
  *        matching the jitfields C-level `op='+'` entry point.
  */
-void flow_diag_add_(
+void flow_adddiag_(
           DLTensor & out_      ,
     const double   * voxel_size,
           double     absolute  ,
@@ -723,7 +723,7 @@ void flow_diag_add_(
  * @brief `flow_diag` variant that accumulates: `out -= diag(L)`. In-place only,
  *        matching the jitfields C-level `op='-'` entry point.
  */
-void flow_diag_sub_(
+void flow_subdiag_(
           DLTensor & out_      ,
     const double   * voxel_size,
           double     absolute  ,
@@ -810,7 +810,7 @@ void flow_kernel(
  * @brief `flow_kernel` variant that accumulates: `out += K (the stencil)`. In-place only,
  *        matching the jitfields C-level `op='+'` entry point.
  */
-void flow_kernel_add_(
+void flow_addkernel_(
           DLTensor & out_      ,
     const double   * voxel_size,
           double     absolute  ,
@@ -860,7 +860,7 @@ void flow_kernel_add_(
  * @brief `flow_kernel` variant that accumulates: `out -= K (the stencil)`. In-place only,
  *        matching the jitfields C-level `op='-'` entry point.
  */
-void flow_kernel_sub_(
+void flow_subkernel_(
           DLTensor & out_      ,
     const double   * voxel_size,
           double     absolute  ,
@@ -966,7 +966,7 @@ void flow_forward(
           int        stream    )
 {
     sym_matvec(out, hes, inp, stream);
-    flow_matvec_add_(out, inp, voxel_size, absolute, membrane, bending, shears, div, bound, ndim, stream);
+    flow_addmatvec_(out, inp, voxel_size, absolute, membrane, bending, shears, div, bound, ndim, stream);
 }
 
 // `flow_diag`'s regulariser diagonal doesn't depend on the operand being

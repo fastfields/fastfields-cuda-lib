@@ -45,7 +45,7 @@ void flow_matvec(
  * @brief `flow_matvec` variant that accumulates into `out`: `out += L(inp)`,
  *        instead of overwriting it. Same conventions otherwise.
  */
-void flow_matvec_add_(
+void flow_addmatvec_(
           DLTensor & out       ,
     const DLTensor & inp       ,
     const double   * voxel_size = nullptr,
@@ -63,7 +63,7 @@ void flow_matvec_add_(
  * @brief `flow_matvec` variant that subtracts from `out`: `out -= L(inp)`,
  *        instead of overwriting it. Same conventions otherwise.
  */
-void flow_matvec_sub_(
+void flow_submatvec_(
           DLTensor & out       ,
     const DLTensor & inp       ,
     const double   * voxel_size = nullptr,
@@ -102,7 +102,7 @@ void flow_diag(
  * entry point. There is deliberately no out-of-place counterpart: an
  * out-of-place accumulate is a caller-side clone followed by this same call.
  */
-void flow_diag_add_(
+void flow_adddiag_(
           DLTensor & out       ,
     const double   * voxel_size = nullptr,
           double     absolute  = 0.0,
@@ -123,7 +123,7 @@ void flow_diag_add_(
  * entry point. There is deliberately no out-of-place counterpart: an
  * out-of-place accumulate is a caller-side clone followed by this same call.
  */
-void flow_diag_sub_(
+void flow_subdiag_(
           DLTensor & out       ,
     const double   * voxel_size = nullptr,
           double     absolute  = 0.0,
@@ -164,7 +164,7 @@ void flow_kernel(
  * entry point. There is deliberately no out-of-place counterpart: an
  * out-of-place accumulate is a caller-side clone followed by this same call.
  */
-void flow_kernel_add_(
+void flow_addkernel_(
           DLTensor & out       ,
     const double   * voxel_size = nullptr,
           double     absolute  = 0.0,
@@ -185,7 +185,7 @@ void flow_kernel_add_(
  * entry point. There is deliberately no out-of-place counterpart: an
  * out-of-place accumulate is a caller-side clone followed by this same call.
  */
-void flow_kernel_sub_(
+void flow_subkernel_(
           DLTensor & out       ,
     const double   * voxel_size = nullptr,
           double     absolute  = 0.0,
